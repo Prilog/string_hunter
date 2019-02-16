@@ -99,6 +99,7 @@ void preparer::find_string(const QString& str) {
     std::string word = str.toStdString() + '\0';
     size_t w_length = word.size();
     std::vector <size_t> v(word.size());
+    //prepare kmp
     for (size_t i = 1; i < w_length; i++) {
         size_t j = v[i - 1];
         while (j > 0 && word[i] != word[j]) {
@@ -109,15 +110,21 @@ void preparer::find_string(const QString& str) {
         }
         v[i] = j;
     }
+    //prepare trigrams
+    QSet <uint32_t> str_trigrams;
+    for (size_t i = 2; i < word.size() - 1; i++) {
+        str_trigrams.insert(get_trigram(word[i - 2], word[i - 1], word[i]));
+    }
+    //check files
     for (auto const &file_info: trigram_file_list) {
         if (check_interruption()) {
             emit scaning_finished(false);
             return;
         }
+        //check trigrams
         bool flag = true;
-        for (size_t i = 2; i < word.size() - 1; i++) {
-            uint32_t trigram = get_trigram(word[i - 2], word[i - 1], word[i]);
-            if (file_info.second.find(trigram) == file_info.second.end()) {
+        for (auto trgrm : str_trigrams) {
+            if (file_info.second.find(trgrm) == file_info.second.end()) {
                 flag = false;
                 break;
             }
